@@ -1,1 +1,5 @@
 rootProject.name = 'localsearch'
+
+include(":point-of-interest")
+include(":localsearch")
+include(":batch")
