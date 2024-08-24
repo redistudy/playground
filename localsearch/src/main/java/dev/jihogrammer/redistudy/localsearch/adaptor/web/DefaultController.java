@@ -17,7 +17,7 @@ import java.util.Collection;
 
 @Controller
 @RequiredArgsConstructor
-public class DefaultController {
+public class    DefaultController {
 
     private final String apiKey;
 
