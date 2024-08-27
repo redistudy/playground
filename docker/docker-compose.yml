@@ -1,0 +1,63 @@
+services:
+  # https://docs.influxdata.com/influxdb/v2/install/use-docker-compose/
+  # https://github.com/influxdata/influxdata-docker/blob/134d39a090aaf8baa7d8993ee503490a6bb88a15/influxdb/2.7/alpine/Dockerfile
+  influxdb:
+    image: influxdb:${INFLUX_DB_VERSION}
+    ports:
+      - 8086:8086
+    environment:
+      DOCKER_INFLUXDB_INIT_MODE: setup
+      DOCKER_INFLUXDB_INIT_USERNAME_FILE: /run/secrets/influxdb2-admin-username
+      DOCKER_INFLUXDB_INIT_PASSWORD_FILE: /run/secrets/influxdb2-admin-password
+      DOCKER_INFLUXDB_INIT_ADMIN_TOKEN_FILE: /run/secrets/influxdb2-admin-token
+      DOCKER_INFLUXDB_INIT_ORG: docs
+      DOCKER_INFLUXDB_INIT_BUCKET: home
+    secrets:
+      - influxdb2-admin-username
+      - influxdb2-admin-password
+      - influxdb2-admin-token
+    volumes:
+      - type: volume
+        source: influxdb2-data
+        target: /var/lib/influxdb2
+      - type: volume
+        source: influxdb2-config
+        target: /etc/influxdb2
+
+  redis:
+    image: redis:${REDIS_VERSION}
+    ports:
+      - 6379:6379
+    volumes:
+      - type: volume
+        source: redis-data
+        target: ${REDIS_DATA_DIR}
+#      - type: bind
+#        source: redis.conf
+#        target: /usr/local/conf/redis.conf
+    restart: always
+#    command: redis-server /usr/local/conf/redis.conf
+    command: redis-server
+
+  filebeat:
+    image: docker.elastic.co/beats/filebeat:${FILEBEAT_VERSION}
+#    user: root
+    volumes:
+      - ./filebeat.yml:/usr/share/filebeat/filebeat.yml:ro
+#      - ./:/usr/share/filebeat/data/
+      - ${FILEBEAT_TARGET_LOG_DIR}:/usr/share/filebeat/data/
+#    restart: always
+
+secrets:
+  influxdb2-admin-username:
+    file: .env.influxdb2-admin-username
+  influxdb2-admin-password:
+    file: .env.influxdb2-admin-password
+  influxdb2-admin-token:
+    file: .env.influxdb2-admin-token
+
+volumes:
+  influxdb2-data:
+  influxdb2-config:
+  redis-data:
+  filebeat-data:
