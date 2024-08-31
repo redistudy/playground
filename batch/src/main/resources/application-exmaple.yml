@@ -1,0 +1,14 @@
+server:
+  port: 8081
+
+spring:
+  application:
+    name: localsearch-batch
+
+localsearch:
+  public-api:
+    daegu-food:
+      base-uri: https://www.daegufood.go.kr/kor/api/tasty.html
+    geocoding:
+      api-key: ${API_KEY}
+      base-uri: https://api.vworld.kr/req/address
