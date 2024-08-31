@@ -1,0 +1,184 @@
+<!DOCTYPE html>
+<html lang="kr" xmlns:th="http://www.thymeleaf.org">
+<head>
+    <meta charset="UTF-8" />
+    <title>그리기</title>
+
+    <style>
+        html,
+        body {
+            margin: 0;
+            padding: 0px 15px 10px 15px;
+            width: 100%;
+            height: 100%;
+        }
+
+        .map {
+            width: 100%;
+            height: 400px;
+            position: relative;
+        }
+
+        button.active {
+            background: #4c4c4c;
+            color: #fff;
+        }
+    </style>
+</head>
+<body>
+<h1>REDISTUDY LOCALSEARCH</h1>
+
+<div>
+    <form id="search-form">
+        <div>
+            <label>
+                lat:
+                <input type="text" name="lat">
+            </label>
+        </div>
+        <div>
+            <label>
+                lon:
+                <input type="text" name="lon">
+            </label>
+        </div>
+        <div>
+            <label>
+                radius:
+                <input type="number" step="1" name="radius">
+            </label>
+        </div>
+        <div>
+            <label>
+                <input type="submit">
+            </label>
+        </div>
+    </form>
+</div>
+
+<div id="map" class="map"></div>
+<div>
+    <button class="marker" onclick="setDrawingMode('marker');">마커 그리기</button>
+    <button class="circle" onclick="setDrawingMode('circle');">원 그리기</button>
+    <button class="polygon" onclick="setDrawingMode('polygon');">폴리곤 그리기</button>
+    <button class="polyline" onclick="setDrawingMode('polyline');">폴리라인 그리기</button>
+    <button class="rectangle" onclick="setDrawingMode('rectangle');">사각형 그리기</button>
+    <button onclick="deleteMarkers();">모든 도형 지우기</button>
+</div>
+<div id="search-result"></div>
+<script src="https://code.jquery.com/jquery-3.6.0.min.js"></script>
+<script th:src="|https://api.routo.com/v2/maps/map?key=${apiKey}|"></script>
+<script>
+    // 지도를 생성합니다.
+    var map = new routo.maps.Map("map", {
+        center: { lat: 37.507009, lng: 127.0586339 }, // 지도 초기 위치
+        zoom: 18, // 지도 로딩 시 최초 표시 레벨
+    });
+
+    // 그리기 관리자를 생성하고 지도에 추가합니다.
+    var drawingManager = new routo.maps.drawing.DrawingManager({
+        map: map,
+    });
+
+    // 그리기 모드를 설정합니다.
+    function setDrawingMode(drawingMode) {
+        var buttons = document.getElementsByTagName('button');
+        Array.prototype.forEach.call(buttons, function(element, index, array){
+                element.classList.remove('active');
+        })
+
+        var buttonDrawingMode = document.querySelectorAll('button.' + drawingMode);
+        if(buttonDrawingMode && buttonDrawingMode[0]){
+                buttonDrawingMode[0].classList.add('active');
+        }
+
+        drawingManager.setDrawingMode(drawingMode);
+    }
+
+    // 모든 도형을 지웁니다.
+    function deleteMarkers() {
+        drawingManager.clear();
+    }
+
+    // 지도 이동
+    function panTo(location) {
+        console.log(`pan to (${location.x}, ${location.y})`)
+        map.panTo({ lat: location.y, lng: location.x }, 18);
+    }
+</script>
+
+<script>
+
+    const formElement = document.getElementById("search-form");
+    formElement.addEventListener("submit", async (e) => {
+        e.preventDefault();
+        const data = new FormData(e.target);
+        console.log([...data.entries()]);
+
+        const params = new URLSearchParams();
+        for (const pair of data) {
+            params.append(pair[0], pair[1]);
+        }
+
+        const response = await fetch(`/search?${params}`);
+        const responseBody = await response.json();
+        console.log({response});
+
+        // const resultElement = document.getElementById("search-result");
+        // resultElement.innerText = "";
+
+        var infowindow = new routo.maps.InfoWindow({
+            content: "Hello World!",
+            disableAutoPan: true,
+            pixelOffset: new routo.maps.Size(0, -20),
+            removeable: true,
+        });
+
+        for (const poi of responseBody) {
+            console.log({...poi})
+
+            poi.marker = new routo.maps.Marker({
+                position: {
+                    lat: poi.location.y,
+                    lng: poi.location.x,
+                },
+                icon: {
+                    url: 'https://tile.routo.com/webgis_tile01/Static/images/icon/Marker_Type_A.png',
+                    anchor: new routo.maps.Point(24, 60)
+                },
+                label: {
+                    text: poi.name,
+                    fontSize: '12px',
+                    fontWeight: '300'
+                },
+                map: map,
+            });
+
+            poi.markerWindow = new routo.maps.InfoWindow({
+                content: `${poi.name} / ${poi.address}`,
+                disableAutoPan: true,
+                pixelOffset: new routo.maps.Size(0, -20),
+                removeable: true,
+            });
+
+            poi.marker.addEventListener("click", () => {
+                poi.markerWindow.open({
+                    anchor: poi.marker,
+                    map: map,
+                });
+            });
+            poi.markerWindow.addEventListener("content_changed", (e) => {
+                console.log("closing infowindow");
+                e.element.addEventListener('click', () => poi.markerWindow.close());
+            });
+
+            // const info = document.createElement("p");
+            // info.innerText = `${poi.name} / ${poi.address}`;
+            // document.body.appendChild(info);
+        }
+
+        panTo(responseBody[0].location);
+    })
+</script>
+</body>
+</html>
