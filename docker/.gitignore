@@ -1,3 +1,4 @@
 .env*
 redis.conf
 filebeat.yml
+logstash.conf

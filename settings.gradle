@@ -5,3 +5,5 @@ include(":practice")
 include(":point-of-interest")
 include(":localsearch")
 include(":batch")
+
+include(":filebeat-test")

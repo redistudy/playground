@@ -1,4 +1,11 @@
 services:
+  app:
+    image: jihogrammer/random-app:0.0.2
+    ports:
+      - 8080:8080
+    volumes:
+      - app-logs:/log
+
   # https://docs.influxdata.com/influxdb/v2/install/use-docker-compose/
   # https://github.com/influxdata/influxdata-docker/blob/134d39a090aaf8baa7d8993ee503490a6bb88a15/influxdb/2.7/alpine/Dockerfile
   influxdb:
@@ -32,21 +39,31 @@ services:
       - type: volume
         source: redis-data
         target: ${REDIS_DATA_DIR}
-#      - type: bind
-#        source: redis.conf
-#        target: /usr/local/conf/redis.conf
     restart: always
-#    command: redis-server /usr/local/conf/redis.conf
     command: redis-server
 
   filebeat:
     image: docker.elastic.co/beats/filebeat:${FILEBEAT_VERSION}
-#    user: root
+    depends_on:
+      - redis
+      - app
     volumes:
       - ./filebeat.yml:/usr/share/filebeat/filebeat.yml:ro
-#      - ./:/usr/share/filebeat/data/
-      - ${FILEBEAT_TARGET_LOG_DIR}:/usr/share/filebeat/data/
-#    restart: always
+      - app-logs:/usr/share/filebeat/data/
+
+#  logstash:
+#    image: docker.elastic.co/logstash/logstash:${LOGSTASH_VERSION}
+#    depends_on:
+#      - redis
+#    labels:
+#      co.elastic.logs/module: logstash
+#    user: root
+#    volumes:
+#      - logstash-data:/usr/share/logstash/data
+#      - app-logs:/usr/share/logstash/ingest_data/
+#      - ./logstash.conf:/usr/share/logstash/pipeline/logstash.conf:ro
+#    environment:
+#      - xpack.monitoring.enabled=false
 
 secrets:
   influxdb2-admin-username:
@@ -57,7 +74,9 @@ secrets:
     file: .env.influxdb2-admin-token
 
 volumes:
+  app-logs:
   influxdb2-data:
   influxdb2-config:
   redis-data:
-  filebeat-data:
+#  filebeat-data:
+#  logstash-data:
